@@ -100,7 +100,7 @@ def attack(attackPlayer: BattleshipClasses.Player, defendPlayer: BattleshipClass
         # Get attack coords
         attackCoords = attackPlayer.getAttack()
 
-        # Get attack type
+        # Get validity of attack
         attackType = defendPlayer.checkAttack(attackCoords)
 
         # Check attack type
@@ -117,25 +117,6 @@ def attack(attackPlayer: BattleshipClasses.Player, defendPlayer: BattleshipClass
     if attackType == 2:
         
         hit = True
-
-        # Print hit message
-        print("Hit!")
-
-        # Check if ship is sunk
-        
-
-        # Update attack and ship boards
-        attackPlayer.updateAttackBoard(attackCoords, hit)
-
-
-    else:
-
-        # Print miss message
-        print("Miss!")
-
-        # Update attack board  
-        attackPlayer.updateAttackBoard(attackCoords, hit)
-
 
     # Update boards
     attackPlayer.updateAttackBoard(attackCoords, hit)

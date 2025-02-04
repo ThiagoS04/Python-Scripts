@@ -6,8 +6,8 @@ class Ship:
 
     # Declare fields
     size = 0                # Size of ship
-    position = (-1, -1)     # Position of top of ship (row, col)
-    orientation = ""        # Orientation of ship
+    position: tuple     # Position of top of ship (row, col)
+    orientation: str        # Orientation of ship
     id: int                 # Ship id
     shipSegments = []       # List of ship segments
     sunk = False            # Whether ship is sunk or not
@@ -23,7 +23,7 @@ class Ship:
         for i in range(size):
 
             # Create ship segment object
-            segment = self.ShipSegment(position)
+            segment = self.ShipSegment(position, id)
 
             # Store ship segment
             self.shipSegments.append(segment)
@@ -32,11 +32,12 @@ class Ship:
     class ShipSegment:
         
         # Declare fields
-        position = (-1, -1)     # Position of ship segment
+        position: tuple    # Position of ship segment
+        id: int                 # Ship id segment belongs to
         hit = False             # Whether ship segment is hit or not
 
         # Constructor of ship segment object
-        def __init__(self, position: tuple) -> None:
+        def __init__(self, position: tuple, id: int) -> None:
             self.position = position
 
         # Function to set ship segment as hit
@@ -55,6 +56,19 @@ class Ship:
 
         # If all segments are hit, return True
         return True
+    
+    # Fucntion to hit ship segment
+    def hitSegment(self, position: tuple) -> None:
+
+        # Loop through all ship segments
+        for segment in self.shipSegments:
+
+            # If segment is at position, set it as hit
+            if segment.position == position:
+                segment.hit = True
+
+        # Check if ship is sunk
+        self.sunk = self.isSunk()
 
     # Getter methods
     def getSize(self) -> int:
@@ -66,6 +80,9 @@ class Ship:
     def getOrientation(self) -> int:
         return self.orientation
     
+    def getSunk(self) -> bool:
+        return self.sunk
+    
 
 # Player class
 class Player:
@@ -73,8 +90,10 @@ class Player:
     # Declare class attributes
     boardSize = 10
     numShips = 5
-    ships = {}    # {Ship id # : Ship}
+    ships = {}    # {Ship id # : Ship object}
+    shipLocations: list
     columnLetters = [chr(65 + i) for i in range(boardSize)]    # List of column letters
+    allShips = [2, 3, 3, 4, 5]            # List of all ships
 
     """ Player object constructor with name and ships position
     
@@ -87,14 +106,14 @@ class Player:
         self.name = name
         self.board = [[" - " for i in range(self.boardSize)] for i in range(self.boardSize)]            # Board to keep track of ships
         self.attackBoard = [[" - " for i in range(self.boardSize)] for i in range(self.boardSize)]      # Board to keep track of attacks
+        self.shipLocations = [[None] * self.boardSize for _ in range(self.boardSize)]    # Board to keep track of ship locations
 
 
     # Function to choose ship positions
     def placeShips(self) -> None:
 
         # Declare fields
-        allShips = [2, 3, 3, 4, 5]            # List of all ships
-        availableShips = allShips[:]          # List of ships user hasn't placed yet
+        availableShips = self.allShips[:]          # List of ships user hasn't placed yet
 
         # Notify which player is choosing ships
         print(f"Place your ships {self.name}")
@@ -140,15 +159,15 @@ class Player:
                         verifiedShip = True
 
             # Create ship id
-            shipId = allShips.index(shipSize)
+            shipId = self.allShips.index(shipSize)
             if shipId == 1:         # Distinguish between the two 3 size ships
                 shipId = 11 if shipId not in self.ships else 12     # If the first size 3 ship is already placed, set the id to 12
 
             # Create ship object
             ship = Ship(shipSize, orientation, position, shipId)
 
-            # Add ship to dictionary
-            self.ships[shipId] = ship
+            # Store ship information
+            self.storeShipInfo(ship, shipId)
 
             # Remove ship from available ships
             availableShips.remove(shipSize)
@@ -158,6 +177,20 @@ class Player:
 
             # Print board
             self.printBoard()
+
+
+    def storeShipInfo(self, ship: Ship, shipId: int) -> None:
+
+        # Get row and col
+        col, row = self.adjustPosition(ship.getPosition())
+
+        # Add ship to dictionary
+        self.ships[shipId] = ship
+
+        # Add ship to ship locations
+        self.shipLocations[row][col] = shipId
+
+
             
 
     """ Function to select ship
@@ -398,6 +431,9 @@ class Player:
         # Check if position has a ship
         if self.board[row][col] == " - ":       # Miss
 
+            # Print miss message
+            print("Miss!")
+
             return 0
         
         elif self.board[row][col] == (" X " | " O "):      # Already attacked
@@ -406,7 +442,34 @@ class Player:
         
         else:       # Hit
 
-            return 1
+            # Print hit message
+            print("Hit!")
+
+            # Get ship id
+            shipId = self.shipLocations[row][col]
+
+            # Get ship object
+            ship = self.ships[shipId]
+
+            # Hit ship segment
+            ship.hitSegment(position)
+
+            # Check if ship is sunk
+            if ship.isSunk():
+
+                # Print sunk message
+                print("You sunk my BattleShip!")
+
+                # Remove ship from ships list
+                del self.ships[shipId]
+
+                # Check if all ships are sunk
+                if len(self.ships) == 0:
+
+                    # Print game over message
+                    print("You sunk all my ships!")
+
+            return 2
 
 
     """ Function to update attack board
