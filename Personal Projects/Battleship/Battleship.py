@@ -25,14 +25,18 @@ def main():
     while not playerWon:
             
         # Loop through the player list
-        for i in range(playerList):
+        for i in range(len(playerList)):
 
             # Create player references
             attackPlayer  = playerList[i]
-            defendPlayer = playerList[(i + 1) % numPlayers]         # i = 1 | 2, i=2 + 1 % numPlayers = 1
+            defendPlayer = playerList[(i + 1) % numPlayers]         # i = 1 or 2; i=2 + 1 % numPlayers = 1
 
             # Call method to get player's attack
-            attack(attackPlayer, defendPlayer)            
+            attack(attackPlayer, defendPlayer)
+
+            # Check if the game is over
+            if len(defendPlayer.getShips()) == 0:      # If the defending player has no ships left
+                playerWon = True
 
 
 """ Function to setup the game
@@ -49,7 +53,8 @@ def setupGame(numPlayers: int, playerList: list) -> list:
         # Call method to create the player class objects
         playerList.append(createPlayerObject(i + 1))
 
-        # Call method to choose ship positions
+        # Show board and call method to choose ship positions
+        playerList[i].printBoard()
         playerList[i].placeShips()
 
         # Clear terminal so player cannot see other player's ship locations
@@ -99,12 +104,12 @@ def attack(attackPlayer: BattleshipClasses.Player, defendPlayer: BattleshipClass
 
         # Get attack coords
         attackCoords = attackPlayer.getAttack()
-
+        
         # Get validity of attack
-        attackType = defendPlayer.checkAttack(attackCoords)
-
+        attackType = attackPlayer.checkAttack(attackCoords, defendPlayer)
+        
         # Check attack type
-        if attackType == (0 | 2):         # If the attack was a miss or a hit
+        if attackType in [0,2]:         # If the attack was a miss or a hit
 
             # Set newAttack to True
             newAttack = True

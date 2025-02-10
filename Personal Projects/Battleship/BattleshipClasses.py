@@ -9,7 +9,7 @@ class Ship:
     position: tuple     # Position of top of ship (row, col)
     orientation: str        # Orientation of ship
     id: int                 # Ship id
-    shipSegments = []       # List of ship segments
+    shipSegments: list       # List of ship segments
     sunk = False            # Whether ship is sunk or not
 
     # Constructor of ship object
@@ -18,10 +18,20 @@ class Ship:
         self.position = position
         self.orientation = orientation
         self.id = id
+        self.shipSegments = []        # Initialize ship segments list
+
+        # Get row and col
+        col, row = Player.adjustPosition(position)
+
+        # Get row and column changes
+        rowChange, colChange = Player.getDirections().get(orientation)
 
         # Create ship segments
         for i in range(size):
 
+            # Update position
+            position = (col + i * colChange, row + i * rowChange)
+            
             # Create ship segment object
             segment = self.ShipSegment(position, id)
 
@@ -32,7 +42,7 @@ class Ship:
     class ShipSegment:
         
         # Declare fields
-        position: tuple    # Position of ship segment
+        position: tuple         # Position of ship segment
         id: int                 # Ship id segment belongs to
         hit = False             # Whether ship segment is hit or not
 
@@ -41,15 +51,16 @@ class Ship:
             self.position = position
 
         # Function to set ship segment as hit
-        def hit(self) -> None:
+        def markHit(self) -> None:
             self.hit = True
+            print(f"Ship segment at {self.position} is hit")        # Debugging
 
     # Function to determine if ship is sunk (All segments are hit)
     def isSunk(self) -> bool:
 
         # Loop through all ship segments
         for segment in self.shipSegments:
-
+            print(f"Ship {self.id} segment at {segment.position} is {'hit' if segment.hit else 'not hit'}")        # Debugging
             # If any segment is not hit, return False
             if not segment.hit:
                 return False
@@ -65,8 +76,8 @@ class Ship:
 
             # If segment is at position, set it as hit
             if segment.position == position:
-                segment.hit = True
-
+                segment.markHit()
+                print(f"Hit segment at {segment.position}")        # Debugging
         # Check if ship is sunk
         self.sunk = self.isSunk()
 
@@ -82,6 +93,9 @@ class Ship:
     
     def getSunk(self) -> bool:
         return self.sunk
+    
+    def getShipId(self) -> int:
+        return self.id
     
 
 # Player class
@@ -153,7 +167,7 @@ class Player:
                 if hasSpace:        # Proceed only if ship has space to be placed
 
                     # Confirm user wants to place ship
-                    confirmation = input("Are you sure you want to place a ship of size"
+                    confirmation = input("Are you sure you want to place a ship of size "
                                         f"{shipSize} at position {position} with orientation {orientation}? (y/n)\t")
                     if confirmation.upper()[0] == "Y":
                         verifiedShip = True
@@ -166,32 +180,46 @@ class Player:
             # Create ship object
             ship = Ship(shipSize, orientation, position, shipId)
 
-            # Store ship information
-            self.storeShipInfo(ship, shipId)
-
             # Remove ship from available ships
             availableShips.remove(shipSize)
 
-            # Place ship on board
-            self.placeShipOnBoard(ship)
+            # Call method to place ship
+            self.placeShip(ship)
 
-            # Print board
+            # Show board
             self.printBoard()
 
 
+    """ Function to place ship
+    @param ship: ship to place
+    
+    """
+    def placeShip(self, ship:Ship) -> None:
+        
+        # Store ship information
+        self.storeShipInfo(ship, ship.getShipId())
+
+        # Place ship on board
+        self.placeShipOnBoard(ship)
+
+
+    """ Function to store ship information
+
+    @param ship: ship to place
+    @param shipId: id of ship to place
+
+    """
     def storeShipInfo(self, ship: Ship, shipId: int) -> None:
 
         # Get row and col
-        col, row = self.adjustPosition(ship.getPosition())
+        col, row = Player.adjustPosition(ship.getPosition())
 
         # Add ship to dictionary
         self.ships[shipId] = ship
 
         # Add ship to ship locations
-        self.shipLocations[row][col] = shipId
+        self.shipLocations[row][col] = shipId            
 
-
-            
 
     """ Function to select ship
 
@@ -208,17 +236,29 @@ class Player:
         while incorrectShip:
 
             # Get ship user wants to place
-            shipSize = int(input(f"Which size ship would you like to place?\n"
-                    f"The sizes available are {' '.join(map(str, availableShips))}\t"))
+            userInput = input(f"Which size ship would you like to place?\n"
+                    f"The sizes available are {' '.join(map(str, availableShips))}\t")
+            
+            # Try to convert input to int
+            try:
+
+                shipSize = int(userInput)
+
+            except ValueError:         # Catch invalid input
+
+                print("Invalid input. Please try again.")
+                continue        # Skip rest of while block
             
             # Note which ship was selected
             print("You chose the ship with a size of", shipSize)
 
             # Return if ship size is valid
-            if self.verifyShipSize(shipSize) and shipSize in availableShips:
-                return shipSize
-            else:
+            if not self.verifyShipSize(shipSize) or shipSize not in availableShips:
+
                 print("Invalid ship size. Please try again.")       # Catch invalid input
+
+            else:
+                return shipSize
     
 
     """ Function to select position
@@ -228,24 +268,43 @@ class Player:
     """
     def selectPosition(self) -> tuple:
         
-        # Print board
-        self.printBoard()
-
-        # Create invalid position flag
-        incorrectPosition = True
+        # Create invalid position flags
+        invalidColumn = True
+        invalidRow = True
 
         # Create verification loop
-        while incorrectPosition:
+        while invalidColumn:
 
             # Ask user for position of ship
             col = input("Select column:\t").upper()
-            row = int(input("Select row:\t"))
 
-            # Return of position is valid
-            if self.verifyPosition((col, row)):
-                return (col, row)
+            # Verify column input
+            if not self.verifyColumn(col):
+                print("Invalid column. Please try again.")
             else:
-                print("Invalid position. Please try again.")       # Catch invalid input
+                invalidColumn = False
+
+        while invalidRow:
+
+            userInput = input("Select row:\t")
+
+            # Try to convert input to int
+            try:
+
+                row = int(userInput)
+
+                # Verify row input
+                if not self.verifyRow(row):
+                    raise ValueError
+                
+                invalidRow = False
+
+            except ValueError:         # Catch invalid input
+
+                print("Invalid input. Please try again.")
+
+        # Return position
+        return (col,row)
     
 
     """ Function to select orientation
@@ -281,18 +340,30 @@ class Player:
         return shipSize in [2, 3, 3, 4, 5]
     
     def verifyPosition(self, position: tuple) -> bool:
-        return position[0] in self.columnLetters and position[1] in range(self.boardSize + 1) and self.board[position[1] - 1][self.columnLetters.index(position[0])] == " - "
+
+        # Note which position was selected
+        print("You chose the position", position)
+
+        # Get user confirmation
+        confirmation = input("Are you sure you want to attack this position? (y/n)\t")
+        return confirmation.upper()[0] == "Y"
+    
+    def verifyColumn(self, column: str) -> bool:
+        return column in Player.columnLetters
+    
+    def verifyRow(self, row: int) -> bool:
+        return row in range(self.boardSize + 1)
     
     def verifyOrientation(self, orientation: str) -> bool:
         return orientation in ["up", "down", "left", "right"]
     
     # Function to adjust position for 0 index and convert column letter to number
-    def adjustPosition(self, position: tuple) -> tuple:
+    def adjustPosition(position: tuple) -> tuple:
 
         # Declare fields
         col, row = position
         row -= 1                                    # Adjust for 0 index
-        colIndex = self.columnLetters.index(col)         # Convert to number
+        colIndex = Player.columnLetters.index(col)         # Convert to number
 
         return (colIndex, row)
     
@@ -301,8 +372,8 @@ class Player:
     def checkSpace(self, shipSize: int, position: tuple, orientation: str):
 
         # Declare fields
-        col, row = self.adjustPosition(position)
-        direction = self.getDirections().get(orientation)
+        col, row = Player.adjustPosition(position)
+        direction = Player.getDirections().get(orientation)
         newRow, newCol = row, col         # Initialize new row and column
 
         # Check shipSize num spaces
@@ -334,12 +405,12 @@ class Player:
 
         # Declare fields
         print("Placing ship of size", ship.getSize(), "at position", ship.getPosition(), "with orientation", ship.getOrientation())
-        col, row = self.adjustPosition(ship.getPosition())
+        col, row = Player.adjustPosition(ship.getPosition())
         orientation = ship.getOrientation()
         size = ship.getSize()
         
         # Get row and column changes
-        rowChange, colChange = self.getDirections().get(orientation)
+        rowChange, colChange = Player.getDirections().get(orientation)
         
         # Place ship on board
         for i in range(size):
@@ -352,12 +423,15 @@ class Player:
     """
     def printBoard(self) -> None:
         
+        # Notify which board is being printed
+        print(f"Your ship board {self.name}:")
+
         # Print column letters
         print("\n\n\n")         # Add separation
         print("     ", end="")    # Add space for row numbers
 
         for i in range(self.boardSize):
-            print(f"{self.columnLetters[i]:^6}", end="")
+            print(f"{Player.columnLetters[i]:^6}", end="")
 
         for row in range(self.boardSize):
             
@@ -374,12 +448,15 @@ class Player:
     """
     def printAttackBoard(self) -> None:
 
+        # Notify user which board is being printed
+        print(f"Your attack board {self.name}:")
+        
         # Print column letters
         print("\n\n\n")         # Add separation
         print("     ", end="")    # Add space for row numbers
 
         for i in range(self.boardSize):
-            print(f"{self.columnLetters[i]:^6}", end="")
+            print(f"{Player.columnLetters[i]:^6}", end="")
 
         for row in range(self.boardSize):
             
@@ -397,24 +474,19 @@ class Player:
     """
     def getAttack(self) -> tuple:
 
-        # Create invalid attack flag
-        incorrectAttack = True
+        # Print attack board for player to see
+        self.printAttackBoard()
 
-        # Create verification loop
-        while incorrectAttack:
+        # Call method to get position to attack
+        print(f"{self.name}, choose a position to attack.")
+        position = self.selectPosition()
 
-            # Call method to get position to attack
-            print("Choose a position to attack.")
-            position = self.selectPosition()
-
-            # Declare col and row
-            col, row = self.adjustPosition(position)
-
-            # Check if position has already been attacked
-            if self.attackBoard[row][col] == " - ":
-                return position
-            else:
-                print("Position has already been attacked. Please try again.")       # Catch invalid input
+        # Confirm attack
+        if not self.verifyPosition(position):
+            position = self.getAttack()
+        
+        # Return attack coordinates
+        return position
 
 
     """ Function to check if attack hits a ship
@@ -423,21 +495,21 @@ class Player:
     @return int: 0 = miss, 1 = already attacked, 2 = hit
 
     """
-    def checkAttack(self, position: tuple) -> int:
+    def checkAttack(self, position: tuple, defendingPlayer: "Player") -> int:
 
         # Declare fields
-        col, row = self.adjustPosition(position)
+        col, row = Player.adjustPosition(position)
 
         # Check if position has a ship
-        if self.board[row][col] == " - ":       # Miss
+        if defendingPlayer.board[row][col] == " - ":       # Miss
 
             # Print miss message
             print("Miss!")
 
             return 0
         
-        elif self.board[row][col] == (" X " | " O "):      # Already attacked
-
+        elif self.attackBoard[row][col] in [" X "," O "]:      # Already attacked
+            
             return 1
         
         else:       # Hit
@@ -446,10 +518,10 @@ class Player:
             print("Hit!")
 
             # Get ship id
-            shipId = self.shipLocations[row][col]
-
+            shipId = defendingPlayer.shipLocations[row][col]
+            print(f"Ship id is {shipId}")
             # Get ship object
-            ship = self.ships[shipId]
+            ship = defendingPlayer.ships[shipId]
 
             # Hit ship segment
             ship.hitSegment(position)
@@ -481,7 +553,7 @@ class Player:
     def updateAttackBoard(self, position: tuple, hit: bool) -> None:
 
         # Declare fields
-        col, row = self.adjustPosition(position)
+        col, row = Player.adjustPosition(position)
 
         # Update attack board
         if hit:
@@ -498,14 +570,14 @@ class Player:
     def updateShipBoard(self, position: tuple) -> None:
 
         # Declare fields
-        col, row = self.adjustPosition(position)
+        col, row = Player.adjustPosition(position)
 
         # Update ship board
         self.board[row][col] = " X "
 
 
     # Getter methods
-    def getDirections(self):
+    def getDirections() -> tuple:
 
         # Declare directions; structured (y, x)
         directions = {"up": (-1, 0),           # Inverse y values because positive values goes down 
@@ -515,6 +587,9 @@ class Player:
         
         # Return directions
         return directions
+    
+    def getShips(self) -> dict:
+        return self.ships
 
 
 
