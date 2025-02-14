@@ -38,6 +38,14 @@ def main():
             if len(defendPlayer.getShips()) == 0:      # If the defending player has no ships left
                 playerWon = True
 
+    # Print the winner and all player boards
+    print(f"{attackPlayer.getName()} wins!")
+    for player in playerList:
+
+        print(f"{player.getName()}'s boards:")
+        player.printBoard()
+        player.printAttackBoard()
+
 
 """ Function to setup the game
 
@@ -59,6 +67,8 @@ def setupGame(numPlayers: int, playerList: list) -> list:
 
         # Clear terminal so player cannot see other player's ship locations
         os.system('cls')
+        for key, value in playerList[i].getShips().items():
+            print(f"{key}: {value}")
 
     if numPlayers == 1:      # If the user is playing against AI
 

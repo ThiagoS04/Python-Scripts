@@ -53,16 +53,23 @@ class Ship:
         # Function to set ship segment as hit
         def markHit(self) -> None:
             self.hit = True
-            print(f"Ship segment at {self.position} is hit")        # Debugging
+
+        # Getter methods
+        def getPosition(self) -> tuple:
+            return self.position
+        def getId(self) -> int:
+            return self.id
+        def getHit(self) -> bool:
+            return self.hit
 
     # Function to determine if ship is sunk (All segments are hit)
     def isSunk(self) -> bool:
 
         # Loop through all ship segments
         for segment in self.shipSegments:
-            print(f"Ship {self.id} segment at {segment.position} is {'hit' if segment.hit else 'not hit'}")        # Debugging
+            
             # If any segment is not hit, return False
-            if not segment.hit:
+            if not segment.getHit():
                 return False
 
         # If all segments are hit, return True
@@ -73,11 +80,11 @@ class Ship:
 
         # Loop through all ship segments
         for segment in self.shipSegments:
-
+            
             # If segment is at position, set it as hit
-            if segment.position == position:
+            if segment.getPosition() == position:
                 segment.markHit()
-                print(f"Hit segment at {segment.position}")        # Debugging
+                
         # Check if ship is sunk
         self.sunk = self.isSunk()
 
@@ -104,7 +111,7 @@ class Player:
     # Declare class attributes
     boardSize = 10
     numShips = 5
-    ships = {}    # {Ship id # : Ship object}
+    ships: dict    # {Ship id # : Ship object}
     shipLocations: list
     columnLetters = [chr(65 + i) for i in range(boardSize)]    # List of column letters
     allShips = [2, 3, 3, 4, 5]            # List of all ships
@@ -120,7 +127,8 @@ class Player:
         self.name = name
         self.board = [[" - " for i in range(self.boardSize)] for i in range(self.boardSize)]            # Board to keep track of ships
         self.attackBoard = [[" - " for i in range(self.boardSize)] for i in range(self.boardSize)]      # Board to keep track of attacks
-        self.shipLocations = [[None] * self.boardSize for _ in range(self.boardSize)]    # Board to keep track of ship locations
+        self.shipLocations = [[None for i in range(self.boardSize)] for i in range(self.boardSize)]    # Board to keep track of ship locations
+        self.ships = {}
 
 
     # Function to choose ship positions
@@ -172,16 +180,16 @@ class Player:
                     if confirmation.upper()[0] == "Y":
                         verifiedShip = True
 
+            # Remove ship from available ships
+            availableShips.remove(shipSize)
+
             # Create ship id
             shipId = self.allShips.index(shipSize)
             if shipId == 1:         # Distinguish between the two 3 size ships
-                shipId = 11 if shipId not in self.ships else 12     # If the first size 3 ship is already placed, set the id to 12
+                shipId = 11 if shipSize in availableShips else 12
 
             # Create ship object
             ship = Ship(shipSize, orientation, position, shipId)
-
-            # Remove ship from available ships
-            availableShips.remove(shipSize)
 
             # Call method to place ship
             self.placeShip(ship)
@@ -213,12 +221,17 @@ class Player:
 
         # Get row and col
         col, row = Player.adjustPosition(ship.getPosition())
+        orientation = ship.getOrientation()
+
+         # Get row and column changes
+        rowChange, colChange = Player.getDirections().get(orientation)
 
         # Add ship to dictionary
         self.ships[shipId] = ship
 
         # Add ship to ship locations
-        self.shipLocations[row][col] = shipId            
+        for i in range(ship.size):
+            self.shipLocations[row + i * rowChange][col + i * colChange] = shipId      
 
 
     """ Function to select ship
@@ -404,7 +417,6 @@ class Player:
     def placeShipOnBoard(self, ship: Ship) -> None:
 
         # Declare fields
-        print("Placing ship of size", ship.getSize(), "at position", ship.getPosition(), "with orientation", ship.getOrientation())
         col, row = Player.adjustPosition(ship.getPosition())
         orientation = ship.getOrientation()
         size = ship.getSize()
@@ -519,12 +531,12 @@ class Player:
 
             # Get ship id
             shipId = defendingPlayer.shipLocations[row][col]
-            print(f"Ship id is {shipId}")
+            
             # Get ship object
             ship = defendingPlayer.ships[shipId]
 
             # Hit ship segment
-            ship.hitSegment(position)
+            ship.hitSegment(Player.adjustPosition(position))
 
             # Check if ship is sunk
             if ship.isSunk():
@@ -533,10 +545,10 @@ class Player:
                 print("You sunk my BattleShip!")
 
                 # Remove ship from ships list
-                del self.ships[shipId]
+                del defendingPlayer.ships[shipId]
 
                 # Check if all ships are sunk
-                if len(self.ships) == 0:
+                if len(defendingPlayer.ships) == 0:
 
                     # Print game over message
                     print("You sunk all my ships!")
