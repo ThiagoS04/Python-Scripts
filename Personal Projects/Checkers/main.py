@@ -162,15 +162,40 @@ def title_screen(screen_x: int, screen_y: int) -> None:
 
 
 
-def startup(screen_x: int, screen_y: int) -> None:
+""" 
+    Method to create startup screen
+    :param screen_x: width of screen
+    :param screen_y: height of screen
+    :return: tuple with player information
+"""
+def startup(screen_x: int, screen_y: int) -> tuple:
+
+    # Player information
+    color = ""
+    num_players = 0
 
     # Set up startup game window
     startup_screen = pygame.display.set_mode((screen_x, screen_x))
 
-    # Create GUI components
+    # Create texts
     num_players_font = pygame.font.Font(None, 75)
     num_players_font.set_italic(True)
     num_players_text = num_players_font.render("Choose number of players", True, (255, 255, 255))
+    num_size = num_players_text.get_size()
+
+    choose_color_font = pygame.font.Font(None, 75)
+    choose_color_font.set_italic(True)
+    choose_color_text = choose_color_font.render("Choose your color", True, (255, 255, 255))
+    color_size = choose_color_text.get_size()
+
+    red_font = pygame.font.Font(None, 25)
+    red_font.set_bold(True)
+
+    black_font = pygame.font.Font(None, 25)
+    black_font.set_bold(True)
+
+    random_font = pygame.font.Font(None, 25)
+    random_font.set_bold(True)
 
     one_player_font = pygame.font.Font(None, 25)
     one_player_font.set_bold(True)
@@ -181,49 +206,96 @@ def startup(screen_x: int, screen_y: int) -> None:
     quit_button_font = pygame.font.Font(None, 25)
     quit_button_font.set_bold(True)
 
+    start_button_font = pygame.font.Font(None, 50)
+    start_button_font.set_bold(True)
+
     # Create buttons
-    player_dim = (105, 40)
-    one_player_pos = ((screen_x - 2 * player_dim[0]) / 3, screen_y / 4)
-    two_player_pos = (3 * (screen_x - 2 * player_dim[0]) / 4, screen_y / 4)
+    button_dim = (105, 40)
+    one_player_pos = ((screen_x - 2 * button_dim[0]) / 3, screen_y / 4)
+    two_player_pos = (3 * (screen_x - 2 * button_dim[0]) / 4, screen_y / 4)
     quit_dim = (85, 40)
     quit_pos = (10, screen_y - quit_dim[1] - 60)
-    one_player_button = pygame.Rect(one_player_pos[0], one_player_pos[1], player_dim[0], player_dim[1])
-    two_player_button = pygame.Rect(two_player_pos[0], two_player_pos[1], player_dim[0], player_dim[1])
+    start_dim = (210, 80)
+
+    one_player_button = pygame.Rect(one_player_pos[0], one_player_pos[1], button_dim[0], button_dim[1])
+    two_player_button = pygame.Rect(two_player_pos[0], two_player_pos[1], button_dim[0], button_dim[1])
     quit_button = pygame.Rect(quit_pos[0], quit_pos[1], quit_dim[0], quit_dim[1])
+    red_button = pygame.Rect(one_player_pos[0], screen_y / 2, button_dim[0], button_dim[1])
+    black_button = pygame.Rect((screen_y - button_dim[0]) / 2, screen_y / 2, button_dim[0], button_dim[1])
+    random_button = pygame.Rect(two_player_pos[0], screen_y / 2, button_dim[0], button_dim[1])
+    start_button = pygame.Rect((screen_x - start_dim[0]) / 2, screen_y - start_dim[1] - 200, start_dim[0], start_dim[1])
 
     # Create start menu loop
     startup_running = True
     while startup_running:
 
-        mpos = pygame.mouse.get_pos()    # Get mouse position
-        one_player_collision = one_player_button.collidepoint(mpos)   # Check if mouse is over start button
-        two_player_collision = two_player_button.collidepoint(mpos)   # Check if mouse is over quit button
-        quit_collision = quit_button.collidepoint(mpos)     # Check if mouse is over quit button
+        # Detect collisions
+        mpos = pygame.mouse.get_pos()                                 # Get mouse position
+        one_player_collision = one_player_button.collidepoint(mpos)   # Check if mouse is over one player button
+        two_player_collision = two_player_button.collidepoint(mpos)   # over two player button
+        quit_collision = quit_button.collidepoint(mpos)               # over quit button
+        red_collision = red_button.collidepoint(mpos)                 # over red button
+        black_collision = black_button.collidepoint(mpos)             # over black button
+        random_collision = random_button.collidepoint(mpos)           # over random button
+        start_collision = start_button.collidepoint(mpos)             # over start button
 
         # Create background
         startup_screen.fill((0, 0, 0))
-        startup_screen.blit(num_players_text, (150, 90))
+        startup_screen.blit(num_players_text, ((screen_x - num_size[0]) / 2, 90))
+        startup_screen.blit(choose_color_text, ((screen_x - color_size[0]) / 2, 330))
 
-        one_player_text = one_player_font.render("1 Player", True, (255, 255, 255))
-        two_player_text = two_player_font.render("2 Player", True, (255, 255, 255))
-        quit_button_text = quit_button_font.render("Quit", True, (255, 255, 255))
+        # Render texts
+        if num_players != 1: one_player_text = one_player_font.render("1 Player", True, (0, 0, 0))
+        if num_players != 2: two_player_text = two_player_font.render("2 Player", True, (0, 0, 0))
+        
+        if color != "RED": red_text = red_font.render("Red", True, (0, 0, 0))
+        if color != "BLACK": black_text = black_font.render("Black", True, (0, 0, 0))
+        if color != "RANDOM": random_text = random_font.render("Random", True, (0, 0, 0))
 
-        pygame.draw.rect(startup_screen, (0, 0, 0), one_player_button)   # Create one player button
-        pygame.draw.rect(startup_screen, (0, 0, 0), two_player_button)   # Create two player button
-        pygame.draw.rect(startup_screen, (0, 0, 0), quit_button)     # Create quit button
+        start_button_text = start_button_font.render("Start", True, (0, 0, 0))
+        quit_button_text = quit_button_font.render("Quit", True, (0, 0, 0))
+
+        # Create buttons
+        pygame.draw.rect(startup_screen, (190, 190, 190), one_player_button)   # One player button
+        pygame.draw.rect(startup_screen, (190, 190, 190), two_player_button)   # Two player button
+        pygame.draw.rect(startup_screen, (190, 190, 190), quit_button)         # Quit button
+        pygame.draw.rect(startup_screen, (190, 190, 190), red_button)          # Red button
+        pygame.draw.rect(startup_screen, (190, 190, 190), black_button)        # Black button
+        pygame.draw.rect(startup_screen, (190, 190, 190), random_button)       # Random button
+        pygame.draw.rect(startup_screen, (190, 190, 190), start_button)        # Start button
 
         # Change colors if mouse is over button
         if one_player_collision:                                                               # One player button
             one_player_text = one_player_font.render("1 Player", True, (45, 205, 50))
+
         if two_player_collision:                                                                # Two player button
             two_player_text = two_player_font.render("2 Player", True, (45, 205, 50))
+
         if quit_collision:                                                                      # Quit button
             quit_button_text = quit_button_font.render("Quit", True, (0, 0, 0)) 
             pygame.draw.rect(startup_screen, (205, 45, 45), quit_button)
 
-        startup_screen.blit(one_player_text, (one_player_pos[0] + player_dim[0] / 4, one_player_pos[1] + player_dim[1] / 4))
-        startup_screen.blit(two_player_text, (two_player_pos[0] + player_dim[0] / 4, two_player_pos[1] + player_dim[1] / 4))
-        startup_screen.blit(quit_button_text, (quit_pos[0] + quit_dim[0] / 4, quit_pos[1] + quit_dim[1] / 4))
+        if start_collision:                                                                     # Start button
+            start_button_text = start_button_font.render("Start", True, (0, 0, 0))
+            pygame.draw.rect(startup_screen, (45, 205, 50), start_button)
+
+        if red_collision:                                                                        # Red button
+            red_text = red_font.render("Red", True, (205, 45, 45))
+
+        if black_collision:                                                                      # Black button
+            black_text = black_font.render("Black", True, (205, 45, 45))
+
+        if random_collision:                                                                    # Random button
+            random_text = random_font.render("Random", True, (205, 45, 45))
+
+        # Put texts on screen
+        startup_screen.blit(one_player_text, (one_player_button.x + button_dim[0] / 4, one_player_button.y + button_dim[1] / 4))
+        startup_screen.blit(two_player_text, (two_player_button.x + button_dim[0] / 4, two_player_button.y + button_dim[1] / 4))
+        startup_screen.blit(quit_button_text, (quit_button.x + quit_dim[0] / 4, quit_button.y + quit_dim[1] / 4))
+        startup_screen.blit(red_text, (red_button.x + button_dim[0] / 4, red_button.y + button_dim[1] / 4))
+        startup_screen.blit(black_text, (black_button.x + button_dim[0] / 4, black_button.y + button_dim[1] / 4))
+        startup_screen.blit(random_text, (random_button.x + button_dim[0] / 4, random_button.y + button_dim[1] / 4))
+        startup_screen.blit(start_button_text, (start_button.x + start_dim[0] / 4, start_button.y + start_dim[1] / 4))
 
         # Handle events
         for event in pygame.event.get(): 
@@ -233,13 +305,29 @@ def startup(screen_x: int, screen_y: int) -> None:
                     exit()
 
                 elif one_player_button.collidepoint(event.pos):   # One player button pressed
-                    pass
+                    num_players = 1
 
                 elif two_player_button.collidepoint(event.pos):   # Two player button pressed
-                    pass
+                    num_players = 2
+
+                elif red_button.collidepoint(event.pos):          # Red button pressed
+                    color = "RED"
+
+                elif black_button.collidepoint(event.pos):        # Black button pressed
+                    color = "BLACK"
+
+                elif random_button.collidepoint(event.pos):       # Random button pressed
+                    color = "RANDOM"
+
+                elif start_button.collidepoint(event.pos):       # Start button pressed
+                    if num_players != 0 and color != "":        # If all choices made
+                        startup_running = False
 
         # Display images on screen
         pygame.display.flip() 
+
+    # Return player information
+    return (num_players, color)
 
 
 
